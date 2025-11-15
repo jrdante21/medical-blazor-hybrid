@@ -1,0 +1,40 @@
+﻿@page "/clinics/{Id:int}"
+@using MedicalApp.Shared.Models
+@inject MedicalApp.Shared.Data.AppDbContext DbContext
+@inject NavigationManager NavManager
+
+<PageTitle>@Model?.ClinicName | Clinic</PageTitle>
+
+<div class="container">
+    <div class="d-flex gap-2 align-items-center mb-4">
+        <div class="me-auto">
+            <h3 class="page-title mb-0">@Model?.ClinicName</h3>
+        </div>
+        <div>
+            <div class="d-flex gap-2">
+                <NavLink class="btn btn-primary" href="@($"/clinics/upsert/{Model?.Id}")"><i class="bi bi-pen"></i> Edit</NavLink>
+                <button class="btn btn-outline-danger" @onclick="@(() => DeleteModal = true)"><i class="bi bi-trash"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@* Modal Delete *@
+<DeleteModal Model="Model" ShowModal="DeleteModal" />
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Clinic? Model { get; set; }
+
+    private bool DeleteModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get Model
+        Model = await DbContext.Clinic.FindAsync(Id);
+        if (Model == null) NavManager.NavigateTo("notfound");
+    }
+}

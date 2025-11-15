@@ -1,0 +1,56 @@
+﻿@page "/clinics"
+@using MedicalApp.Shared.Models
+@inject MedicalApp.Shared.Data.AppDbContext DbContext
+
+<PageTitle>Clinics</PageTitle>
+
+<div class="container">
+    <div class="d-flex gap-2 align-items-center mb-4">
+        <div class="me-auto">
+            <h3 class="page-title mb-0">Clinics</h3>
+        </div>
+        <div>
+            <NavLink class="btn btn-primary" href="/clinics/upsert"><i class="bi bi-plus-circle"></i> Create New</NavLink>
+        </div>
+    </div>
+
+    <div class="overflow-auto">
+        <QuickGrid Items="result" Class="table table-striped table-hover align-middle" Pagination="pagination">
+            <PropertyColumn Property="@(p => p.ClinicName)" Title="Clinic Name" Sortable="true" />
+            <PropertyColumn Property="@(p => p.CreatedDate)" Title="Date Created" Format="yyyy-MM-dd" Sortable="true" />
+            <TemplateColumn Title="Actions" Context="clinic" class="w-0">
+                <div class="d-flex gap-2 align-content-center text-nowrap py-2">
+                    <NavLink class="btn btn-success" href="@($"/clinics/{clinic.Id}")"><i class="bi bi-eye"></i> View</NavLink>
+                    <NavLink class="btn btn-primary" href="@($"/clinics/upsert/{clinic.Id}")"><i class="bi bi-pen"></i> Edit</NavLink>
+                    <button class="btn btn-outline-danger" title="Delete" @onclick="@(() => ShowDeleteModal(clinic))"><i class="bi bi-trash"></i></button>
+                </div>
+            </TemplateColumn>
+        </QuickGrid>
+    </div>
+    <Paginator State="pagination" />
+</div>
+
+@* Modal Delete *@
+<DeleteModal Model="DeleteModel" ShowModal="DeleteModal" />
+
+@code {
+    private IQueryable<Clinic> result = default!;
+
+    private Clinic? DeleteModel = null;
+    private bool DeleteModal = false;
+
+    private PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
+
+    private bool ShowModal = false;
+
+    protected override void OnInitialized()
+    {
+        result = DbContext.Clinic.AsQueryable();
+    }
+
+    private void ShowDeleteModal(Clinic model)
+    {
+        DeleteModel = model;
+        DeleteModal = true;
+    }
+}

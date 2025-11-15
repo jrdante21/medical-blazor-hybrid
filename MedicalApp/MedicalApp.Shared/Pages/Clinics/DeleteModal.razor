@@ -1,0 +1,62 @@
+﻿@using MedicalApp.Shared.Models
+@inject MedicalApp.Shared.Data.AppDbContext DbContext
+@inject NavigationManager NavManager
+
+<ModalPopup 
+    Show="ShowModal"
+    Loading="Loading"
+    Title="Delete Clinic" 
+    Type="Danger" 
+    BtnSubmitText="Delete Clinic"
+    OnClose="@(() => ShowModal = false)"
+    OnSubmit="Submit">
+
+    <Content>
+        @if (Model != null)
+        {
+            <p>Are you sure you want to delete <b>@Model?.ClinicName</b>?</p>
+        }else
+        {
+            <p>No model found!</p>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="alert alert-danger">
+                @ErrorMessage
+            </div>
+        }
+    </Content>
+</ModalPopup>
+
+@code {
+    [Parameter]
+    public bool ShowModal { get; set; } = false;
+
+    [Parameter]
+    public Clinic? Model { get; set; }
+
+    private string? ErrorMessage = "";
+
+    private bool Loading = false;
+
+    private async Task Submit()
+    {
+        ErrorMessage = "";
+
+        if (Model == null)
+        {
+            ErrorMessage = "No clinic model found!";
+            return;
+        }
+
+        Loading = true;
+
+        DbContext.Clinic.Remove(Model);
+        await DbContext.SaveChangesAsync();
+
+        Loading = false;
+        ShowModal = false;
+        NavManager.NavigateTo("/clinics");
+    }
+}

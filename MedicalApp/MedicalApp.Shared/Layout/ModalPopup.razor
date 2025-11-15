@@ -1,0 +1,64 @@
+﻿@if (Show)
+{
+    <div class="modal fade show" tabindex="-1" style="display: block;" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content position-relative">
+                @if(Loading)
+                {
+                    <ContentSpinner />
+                }
+                <div class="modal-header @TypeColor">
+                    <h3 class="modal-title fs-5">@Title</h3>
+                    <button type="button" class="btn-close" @onclick="OnClose" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    @Content
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="OnClose">Cancel</button>
+                    <button type="button" class="btn @BtnSubmitColor" @onclick="OnSubmit">@BtnSubmitText</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? Content { get; set; }
+
+    [Parameter]
+    public bool Show { get; set; } = false;
+
+    [Parameter]
+    public bool Loading { get; set; } = false;
+
+    [Parameter]
+    public string Type { get; set; } = string.Empty;
+    private string TypeColor => (Type) switch
+    {
+        "Success" => "bg-success text-white",
+        "Warning" => "bg-warning text-black",
+        "Danger" => "bg-danger text-white",
+        _ => "bg-primary text-white"
+    };
+
+    [Parameter]
+    public string BtnSubmitText { get; set; } = "Submit";
+    private string BtnSubmitColor => (Type) switch
+    {
+        "Success" => "btn-success",
+        "Warning" => "btn-warning",
+        "Danger" => "btn-danger",
+        _ => "btn-primary"
+    };
+
+    [Parameter]
+    public string Title { get; set; } = "Model Title";
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnSubmit { get; set; }
+}

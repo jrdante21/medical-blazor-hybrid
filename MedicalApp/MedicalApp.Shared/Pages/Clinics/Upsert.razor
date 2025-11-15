@@ -1,0 +1,112 @@
+﻿@page "/clinics/upsert/{Id:int?}"
+@using MedicalApp.Shared.Models
+@inject MedicalApp.Shared.Data.AppDbContext DbContext
+@inject NavigationManager NavManager
+
+<PageTitle>@PageTitle</PageTitle>
+
+<div class="container">
+    <h3 class="page-title mb-4">@PageTitle</h3>
+
+    <EditForm Model="Model" OnValidSubmit="Submit" FormName="FormClinic" class="position-relative" Enhance>
+        @if (Loading)
+        {
+            <ContentSpinner/>
+        }
+
+        @if (!string.IsNullOrEmpty(ErrorMessage)) 
+        {
+            <div class="alert alert-danger">
+                @ErrorMessage
+            </div>
+        }
+        <DataAnnotationsValidator />
+        <div class="form-group">
+            <label class="form-label" for="FormClinicName">Clinic Name</label>
+            <InputText class="form-control" id="ForClinicName" @bind-Value="Model!.ClinicName" />
+            <ValidationMessage For="() => Model!.ClinicName" />
+        </div>
+        <div class="d-flex gap-2 justify-content-end mt-4">
+            @if (Id != null)
+            {
+                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save Changes</button>
+                <NavLink class="btn btn-secondary" href="@($"/clinics/{Model.Id}")">Cancel</NavLink>
+            }
+            else
+            {
+                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Submit</button>
+                <NavLink class="btn btn-secondary" href="clinics">Cancel</NavLink>
+            }
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private string PageTitle = string.Empty;
+
+    private string ErrorMessage = string.Empty;
+
+    private bool Loading { get; set; } = false;
+
+    [SupplyParameterFromForm]
+    private Clinic? Model { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Setup page title
+        PageTitle = (Id == null) ? "Create New Clinic" : "Edit Clinic";
+
+        // Get Model
+        Model ??= new();
+        if (Id != null)
+        {
+            Model = await DbContext.Clinic.FindAsync(Id);
+            if (Model == null) NavManager.NavigateTo("notfound");
+        }
+    }
+
+    private async Task Submit()
+    {
+        Loading = true;
+        if (Model == null)
+        {
+            NavManager.NavigateTo("notfound");
+            return;
+        }
+
+        try
+        {
+            Clinic? model = null;
+
+            // Update
+            if (Id != null)
+            {
+                model = Model;
+                model.UpdatedDate = DateTime.UtcNow;
+                await DbContext.SaveChangesAsync();
+            }
+
+            // Create
+            else
+            {
+                model = new Clinic
+                {
+                    ClinicName = Model?.ClinicName,
+                    CreatedDate = DateTime.UtcNow,
+                    UpdatedDate = DateTime.UtcNow,
+                };
+                DbContext.Clinic.Add(model);
+                await DbContext.SaveChangesAsync();
+            }
+
+            NavManager.NavigateTo($"/clinics/{model.Id}");
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            NavManager.NavigateTo("notfound");
+        }
+    }
+}
