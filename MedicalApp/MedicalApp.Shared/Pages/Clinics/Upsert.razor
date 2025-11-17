@@ -33,7 +33,7 @@
             <Button Type="ButtonType.Button" Color="ButtonColor.Secondary" @onclick="@(() => JS.InvokeVoidAsync("history.back"))">Cancel</Button>
             <Button Type="ButtonType.Submit" Color="ButtonColor.Success" Loading="Loading">
                 <Icon Name="IconName.Save2"></Icon> 
-                @(Id != null ? "Submit" : "Save Changes")
+                @(Id == null ? "Submit" : "Save Changes")
             </Button>
         </div>
     </EditForm>
@@ -55,18 +55,35 @@
     [SupplyParameterFromForm]
     private Clinic? Model { get; set; }
 
+    private HubConnection? hubCon;
+
     protected override async Task OnInitializedAsync()
     {
         // Setup page title
         PageTitle = (Id == null) ? "Create New Clinic" : "Edit Clinic";
+
+        // Hub Connection
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavManager.ToAbsoluteUri("/recordhub"))
+            .Build();
 
         // Get Model
         Model ??= new();
         if (Id != null)
         {
             Model = await DbContext.Clinic.FindAsync(Id);
+
+            // Hub connection
+            hubCon.On("ClinicModified", async () =>
+            {
+                Model = await DbContext.Clinic.FindAsync(Id);
+            });
+
             if (Model == null) NavManager.NavigateTo("notfound");
         }
+
+        // Start Hub
+        await hubCon.StartAsync();
     }
 
     private async Task Submit()
@@ -104,6 +121,12 @@
                 DbContext.Clinic.Add(model);
                 await DbContext.SaveChangesAsync();
                 notif = $"{model.ClinicName} created successfully.";
+            }
+
+            // Hub connection
+            if (hubCon is not null)
+            {
+                await hubCon.SendAsync("ClinicModify", model.Id, "modified");
             }
 
             Loading = false;

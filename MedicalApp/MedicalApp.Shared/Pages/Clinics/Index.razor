@@ -1,6 +1,7 @@
 ﻿@page "/clinics"
 @using MedicalApp.Shared.Models
 @inject MedicalApp.Shared.Data.AppDbContext DbContext
+@inject NavigationManager NavManager
 
 <PageTitle>Clinics</PageTitle>
 
@@ -15,39 +16,73 @@
     </div>
 
     @* Display Result *@
-    <Grid TItem="Clinic"
-          Class="table table-hover table-bordered table-striped text-nowrap align-middle"
-          DataProvider="DataProvider"
-          AllowPaging="true"
-          AllowSorting="true"
-          Responsive="true"
-          Unit="Unit.Px">
+    <div class="position-relative">
+        <p>@(hubConnected ? "Connected" : "Connecting...")</p>
+        <p>@ModelId</p>
 
-        <GridColumns>
-            <GridColumn TItem="Clinic" Freeze="true" FreezeLeftPosition="0" HeaderText="Clinic Name" PropertyName="ClinicName" SortString="ClinicName" SortKeySelector="item => item.ClinicName">
-                @context.ClinicName
-            </GridColumn>
-            <GridColumn TItem="Clinic" HeaderText="Date" PropertyName="CreatedDate" SortString="CreatedDate" SortKeySelector="item => item.CreatedDate">
-                @(context.CreatedDate != null ? context.CreatedDate.Value.ToString("yyyy-MM-dd") : "---")
-            </GridColumn>
-            <GridColumn TItem="Clinic" HeaderText="Actions" PropertyName="Action" Class="w-0">
-                <div class="d-flex gap-2 align-content-center text-nowrap">
-                    <Button Type="ButtonType.Link" Size="ButtonSize.Small" Color="ButtonColor.Success" To="@($"/clinics/{context.Id}")"><Icon Name="IconName.Eye"></Icon> View</Button>
-                    <Button Type="ButtonType.Link" Size="ButtonSize.Small" Color="ButtonColor.Primary" To="@($"/clinics/upsert/{context.Id}")"><Icon Name="IconName.Pen"></Icon> Edit</Button>
-                    <Button Color="ButtonColor.Danger" Size="ButtonSize.Small" title="Delete" @onclick="@(() => ShowDeleteModal(context))"><Icon Name="IconName.Trash"></Icon></Button>
-                </div>
-            </GridColumn>
-        </GridColumns>
+        @if (Loading)
+        {
+            <ContentSpinner />
+        }
+        <Grid @ref="grid" TItem="Clinic"
+              Class="table table-hover table-bordered table-striped text-nowrap align-middle"
+              DataProvider="DataProvider"
+              AllowPaging="true"
+              AllowSorting="true"
+              Responsive="true"
+              Unit="Unit.Px">
 
-    </Grid>
+            <GridColumns>
+                <GridColumn TItem="Clinic" Freeze="true" FreezeLeftPosition="0" HeaderText="Clinic Name" PropertyName="ClinicName" SortString="ClinicName" SortKeySelector="item => item.ClinicName">
+                    @context.ClinicName
+                </GridColumn>
+                <GridColumn TItem="Clinic" HeaderText="Date" PropertyName="CreatedDate" SortString="CreatedDate" SortKeySelector="item => item.CreatedDate">
+                    @(context.CreatedDate != null ? context.CreatedDate.Value.ToString("yyyy-MM-dd") : "---")
+                </GridColumn>
+                <GridColumn TItem="Clinic" HeaderText="Actions" PropertyName="Action" Class="w-0">
+                    <div class="d-flex gap-2 align-content-center text-nowrap">
+                        <Button Type="ButtonType.Link" Size="ButtonSize.Small" Color="ButtonColor.Success" To="@($"/clinics/{context.Id}")"><Icon Name="IconName.Eye"></Icon> View</Button>
+                        <Button Type="ButtonType.Link" Size="ButtonSize.Small" Color="ButtonColor.Primary" To="@($"/clinics/upsert/{context.Id}")"><Icon Name="IconName.Pen"></Icon> Edit</Button>
+                        <Button Color="ButtonColor.Danger" Size="ButtonSize.Small" title="Delete" @onclick="@(() => ShowDeleteModal(context))"><Icon Name="IconName.Trash"></Icon></Button>
+                    </div>
+                </GridColumn>
+            </GridColumns>
+        </Grid>
+    </div>
 </div>
 
 @* Modal Delete *@
 <DeleteConfirm @ref="DeleteConfirm_ref" Model="DeleteModel" />
 
 @code {
+    Grid<Clinic> grid = default!;
+
+    // For Delete Modal
     private DeleteConfirm DeleteConfirm_ref = default!;
     private Clinic? DeleteModel = null;
+
+    // Loading
+    private bool Loading = false;
+
+    // Hub
+    private HubConnection? hubCon;
+    private bool hubConnected => hubCon?.State == HubConnectionState.Connected;
+    private int ModelId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavManager.ToAbsoluteUri("/recordhub"))
+            .Build();
+
+        hubCon.On<int, string>("ClinicModified", async (int id, string action) =>
+        {
+            ModelId = id;
+            await grid.RefreshDataAsync();
+        });
+
+        await hubCon.StartAsync();
+    }
 
     private async Task<GridDataProviderResult<Clinic>> DataProvider(GridDataProviderRequest<Clinic> request)
     {
@@ -78,6 +113,7 @@
         };
 
         var result = await PagedList<Clinic>.ToPagedList(query, request.PageNumber, request.PageSize);
+
         return await Task.FromResult(new GridDataProviderResult<Clinic> { Data = result.Data, TotalCount = result.RecordsTotal });
     }
 

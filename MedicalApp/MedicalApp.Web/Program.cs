@@ -1,7 +1,9 @@
 using MedicalApp.Shared.Data;
+using MedicalApp.Shared.Hubs;
 using MedicalApp.Shared.Services;
 using MedicalApp.Web.Components;
 using MedicalApp.Web.Services;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +21,13 @@ builder.Services.AddRazorComponents()
 
 // Add Bootstrap Blazor
 builder.Services.AddBlazorBootstrap();
+
+// Add SignalR
+builder.Services.AddSignalR();
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/octet-stream"]);
+});
 
 // Add device-specific services used by the MedicalApp.Shared project
 builder.Services.AddSingleton<IFormFactor, FormFactor>();
@@ -41,5 +50,8 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddAdditionalAssemblies(typeof(MedicalApp.Shared._Imports).Assembly);
+
+app.UseResponseCompression();
+app.MapHub<RecordHub>("/recordhub");
 
 app.Run();
