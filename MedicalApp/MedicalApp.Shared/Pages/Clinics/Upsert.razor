@@ -2,6 +2,7 @@
 @using MedicalApp.Shared.Models
 @inject MedicalApp.Shared.Data.AppDbContext DbContext
 @inject NavigationManager NavManager
+@inject IJSRuntime JS
 
 <PageTitle>@PageTitle</PageTitle>
 
@@ -21,22 +22,19 @@
             </div>
         }
         <DataAnnotationsValidator />
+
         <div class="form-group">
             <label class="form-label" for="FormClinicName">Clinic Name</label>
             <InputText class="form-control" id="ForClinicName" @bind-Value="Model!.ClinicName" />
             <ValidationMessage For="() => Model!.ClinicName" />
         </div>
+
         <div class="d-flex gap-2 justify-content-end mt-4">
-            @if (Id != null)
-            {
-                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save Changes</button>
-                <NavLink class="btn btn-secondary" href="@($"/clinics/{Model.Id}")">Cancel</NavLink>
-            }
-            else
-            {
-                <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Submit</button>
-                <NavLink class="btn btn-secondary" href="clinics">Cancel</NavLink>
-            }
+            <Button Type="ButtonType.Button" Color="ButtonColor.Secondary" @onclick="@(() => JS.InvokeVoidAsync("history.back"))">Cancel</Button>
+            <Button Type="ButtonType.Submit" Color="ButtonColor.Success" Loading="Loading">
+                <Icon Name="IconName.Save2"></Icon> 
+                @(Id != null ? "Submit" : "Save Changes")
+            </Button>
         </div>
     </EditForm>
 </div>
@@ -44,6 +42,9 @@
 @code {
     [Parameter]
     public int? Id { get; set; }
+
+    [Inject] 
+    protected ToastService ToastService { get; set; } = default!;
 
     private string PageTitle = string.Empty;
 
@@ -71,6 +72,7 @@
     private async Task Submit()
     {
         Loading = true;
+        string notif = "";
         if (Model == null)
         {
             NavManager.NavigateTo("notfound");
@@ -87,6 +89,7 @@
                 model = Model;
                 model.UpdatedDate = DateTime.UtcNow;
                 await DbContext.SaveChangesAsync();
+                notif = $"{model.ClinicName} updated successfully.";
             }
 
             // Create
@@ -100,8 +103,11 @@
                 };
                 DbContext.Clinic.Add(model);
                 await DbContext.SaveChangesAsync();
+                notif = $"{model.ClinicName} created successfully.";
             }
 
+            Loading = false;
+            ToastService.Notify(new ToastMessage(ToastType.Success, notif));
             NavManager.NavigateTo($"/clinics/{model.Id}");
         }
         catch (DbUpdateConcurrencyException)

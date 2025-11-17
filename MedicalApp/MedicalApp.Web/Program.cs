@@ -17,8 +17,8 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseMySql(
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// QuickGrid Adapter
-builder.Services.AddQuickGridEntityFrameworkAdapter();
+// Add Bootstrap Blazor
+builder.Services.AddBlazorBootstrap();
 
 // Add device-specific services used by the MedicalApp.Shared project
 builder.Services.AddSingleton<IFormFactor, FormFactor>();

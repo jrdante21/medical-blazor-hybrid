@@ -12,8 +12,8 @@
         </div>
         <div>
             <div class="d-flex gap-2">
-                <NavLink class="btn btn-primary" href="@($"/clinics/upsert/{Model?.Id}")"><i class="bi bi-pen"></i> Edit</NavLink>
-                <button class="btn btn-outline-danger" @onclick="@(() => DeleteModal = true)"><i class="bi bi-trash"></i> Delete</button>
+                <Button Type="ButtonType.Link" Color="ButtonColor.Primary" To="@($"/clinics/upsert/{Model?.Id}")"><Icon Name="IconName.Pen"></Icon> Edit</Button>
+                <Button Color="ButtonColor.Danger" title="Delete" @onclick="@(() => DeleteConfirm_ref.ShowModal())"><Icon Name="IconName.Trash"></Icon></Button>
             </div>
         </div>
     </div>
@@ -21,15 +21,15 @@
 </div>
 
 @* Modal Delete *@
-<DeleteModal Model="Model" ShowModal="DeleteModal" />
+<DeleteConfirm @ref="DeleteConfirm_ref" Model="Model" />
 
 @code {
+    private DeleteConfirm DeleteConfirm_ref = default!;
+
     [Parameter]
     public int? Id { get; set; }
 
     private Clinic? Model { get; set; }
-
-    private bool DeleteModal = false;
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,0 +1,53 @@
+﻿@using MedicalApp.Shared.Models
+@inject MedicalApp.Shared.Data.AppDbContext DbContext
+@inject NavigationManager NavManager
+
+<Modal @ref="modal" title="@($"Delete {Model?.ClinicName}?")" UseStaticBackdrop="true" CloseOnEscape="false">
+    <BodyTemplate>
+        Once deleted can not be rolled back.
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="HideModal" Disabled="Loading">Cancel</Button>
+        <Button Color="ButtonColor.Danger" @onclick="DeleteAsync" Disabled="Loading" Loading="Loading">Delete Record</Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+
+    private bool Loading = false;
+
+    [Parameter]
+    public Clinic? Model { get; set; }
+
+    [Inject] 
+    protected ToastService ToastService { get; set; } = default!;
+
+    public async Task ShowModal()
+    {
+        await modal.ShowAsync();
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (Model == null)
+        {
+            ToastService.Notify(new ToastMessage(ToastType.Danger, $"Clinic not found."));
+            return;
+        }
+
+        Loading = true;
+        DbContext.Clinic.Remove(Model);
+        await DbContext.SaveChangesAsync();
+
+        Loading = false;
+        ToastService.Notify(new ToastMessage(ToastType.Success, $"{Model.ClinicName} deleted successfully."));
+        NavManager.NavigateTo("/clinics");
+        await HideModal();
+    }
+
+    private async Task HideModal()
+    {
+        await modal.HideAsync();
+    }
+}

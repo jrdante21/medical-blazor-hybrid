@@ -5,16 +5,29 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
+
     <link rel="stylesheet" href="_content/MedicalApp.Shared/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="_content/MedicalApp.Shared/bootstrap-icons/bootstrap-icons.css" />
     <link rel="stylesheet" href="_content/MedicalApp.Shared/app.css" />
+    <link rel="stylesheet" href="_content/Blazor.Bootstrap/blazor.bootstrap.css" />
     <link rel="stylesheet" href="MedicalApp.Web.styles.css" />
+
     <link rel="icon" type="image/png" href="_content/MedicalApp.Shared/favicon.png" />
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
     <Routes @rendermode="InteractiveServer" />
+    <script src="_content/MedicalApp.Shared/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Add chart.js reference if chart components are used in your application.
+    <script src="_content/MedicalApp.Shared/js/chart.umd.js"></script>
+    <script src="_content/MedicalApp.Shared/js/chartjs-plugin-datalabels.min.js"></script>
+     -->
+
+    <!-- Add sortable.js reference if SortableList component is used in your application. -->
+    <script src="_content/MedicalApp.Shared/js/sortable.min.js"></script>
+    <script src="_content/Blazor.Bootstrap/blazor.bootstrap.js"></script>
     <script src="_framework/blazor.web.js"></script>
 </body>
 

@@ -1,25 +1,51 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<BlazorBootstrapLayout StickyHeader="true">
+    <HeaderSection>
+        @* <ThemeSwitcher /> *@
+    </HeaderSection>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+    <SidebarSection>
+        <Sidebar2 Href="/"
+                  ImageSrc="_content/MedicalApp.Shared/favicon.png"
+                  Title="Medical Application"
+                  DataProvider="Sidebar2DataProvider"
+                  WidthUnit="Unit.Px" />
+    </SidebarSection>
+
+    <ContentSection>
+        <div style="min-height: calc(100vh - 178px);">
+            @Body
         </div>
+    </ContentSection>
 
-        <article class="content px-4">
-            <ContentLoading>
-                @Body
-            </ContentLoading>
-        </article>
-    </main>
-</div>
+    <FooterSection>
+        @* Other Content Here *@
+    </FooterSection>
+</BlazorBootstrapLayout>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+<Toasts class="p-3" AutoHide="true" Delay="4000" Placement="ToastsPlacement.TopCenter" />
+<Preload LoadingText="Loading..." />
+
+@code {
+    private IEnumerable<NavItem> navItems = default!;
+
+    private async Task<Sidebar2DataProviderResult> Sidebar2DataProvider(Sidebar2DataProviderRequest request)
+    {
+        if (navItems is null)
+            navItems = GetNavItems();
+
+        return await Task.FromResult(request.ApplyTo(navItems));
+    }
+
+    private IEnumerable<NavItem> GetNavItems()
+    {
+        navItems = new List<NavItem>
+        {
+            new NavItem { Id = "1", Href = "/", IconName = IconName.HouseDoorFill, Text = "Home", Match=NavLinkMatch.All},
+            new NavItem { Id = "3", Href = "/clinics", IconName = IconName.Table, Text = "Clinics"},
+        };
+
+        return navItems;
+    }
+}

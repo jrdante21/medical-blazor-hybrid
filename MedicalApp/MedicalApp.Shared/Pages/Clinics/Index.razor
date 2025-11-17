@@ -10,47 +10,80 @@
             <h3 class="page-title mb-0">Clinics</h3>
         </div>
         <div>
-            <NavLink class="btn btn-primary" href="/clinics/upsert"><i class="bi bi-plus-circle"></i> Create New</NavLink>
+            <Button Type="ButtonType.Link" Color="ButtonColor.Primary" To="/clinics/upsert"><Icon Name="IconName.PlusCircle"></Icon> Create New</Button>
         </div>
     </div>
 
-    <div class="overflow-auto">
-        <QuickGrid Items="result" Class="table table-striped table-hover align-middle" Pagination="pagination">
-            <PropertyColumn Property="@(p => p.ClinicName)" Title="Clinic Name" Sortable="true" />
-            <PropertyColumn Property="@(p => p.CreatedDate)" Title="Date Created" Format="yyyy-MM-dd" Sortable="true" />
-            <TemplateColumn Title="Actions" Context="clinic" class="w-0">
-                <div class="d-flex gap-2 align-content-center text-nowrap py-2">
-                    <NavLink class="btn btn-success" href="@($"/clinics/{clinic.Id}")"><i class="bi bi-eye"></i> View</NavLink>
-                    <NavLink class="btn btn-primary" href="@($"/clinics/upsert/{clinic.Id}")"><i class="bi bi-pen"></i> Edit</NavLink>
-                    <button class="btn btn-outline-danger" title="Delete" @onclick="@(() => ShowDeleteModal(clinic))"><i class="bi bi-trash"></i></button>
+    @* Display Result *@
+    <Grid TItem="Clinic"
+          Class="table table-hover table-bordered table-striped text-nowrap align-middle"
+          DataProvider="DataProvider"
+          AllowPaging="true"
+          AllowSorting="true"
+          Responsive="true"
+          Unit="Unit.Px">
+
+        <GridColumns>
+            <GridColumn TItem="Clinic" Freeze="true" FreezeLeftPosition="0" HeaderText="Clinic Name" PropertyName="ClinicName" SortString="ClinicName" SortKeySelector="item => item.ClinicName">
+                @context.ClinicName
+            </GridColumn>
+            <GridColumn TItem="Clinic" HeaderText="Date" PropertyName="CreatedDate" SortString="CreatedDate" SortKeySelector="item => item.CreatedDate">
+                @(context.CreatedDate != null ? context.CreatedDate.Value.ToString("yyyy-MM-dd") : "---")
+            </GridColumn>
+            <GridColumn TItem="Clinic" HeaderText="Actions" PropertyName="Action" Class="w-0">
+                <div class="d-flex gap-2 align-content-center text-nowrap">
+                    <Button Type="ButtonType.Link" Size="ButtonSize.Small" Color="ButtonColor.Success" To="@($"/clinics/{context.Id}")"><Icon Name="IconName.Eye"></Icon> View</Button>
+                    <Button Type="ButtonType.Link" Size="ButtonSize.Small" Color="ButtonColor.Primary" To="@($"/clinics/upsert/{context.Id}")"><Icon Name="IconName.Pen"></Icon> Edit</Button>
+                    <Button Color="ButtonColor.Danger" Size="ButtonSize.Small" title="Delete" @onclick="@(() => ShowDeleteModal(context))"><Icon Name="IconName.Trash"></Icon></Button>
                 </div>
-            </TemplateColumn>
-        </QuickGrid>
-    </div>
-    <Paginator State="pagination" />
+            </GridColumn>
+        </GridColumns>
+
+    </Grid>
 </div>
 
 @* Modal Delete *@
-<DeleteModal Model="DeleteModel" ShowModal="DeleteModal" />
+<DeleteConfirm @ref="DeleteConfirm_ref" Model="DeleteModel" />
 
 @code {
-    private IQueryable<Clinic> result = default!;
-
+    private DeleteConfirm DeleteConfirm_ref = default!;
     private Clinic? DeleteModel = null;
-    private bool DeleteModal = false;
 
-    private PaginationState pagination = new PaginationState { ItemsPerPage = 20 };
-
-    private bool ShowModal = false;
-
-    protected override void OnInitialized()
+    private async Task<GridDataProviderResult<Clinic>> DataProvider(GridDataProviderRequest<Clinic> request)
     {
-        result = DbContext.Clinic.AsQueryable();
+        string sortString = "";
+        string sortDirection = "";
+
+        if (request.Sorting is not null && request.Sorting.Any())
+        {
+            // Note: Multi column sorting is not supported at this moment
+            sortString = request.Sorting.FirstOrDefault()!.SortString;
+            sortDirection = request.Sorting.FirstOrDefault()!.SortDirection.ToString();
+        }
+
+        var query = DbContext.Clinic.AsQueryable();
+
+        // Search
+        // if (!string.IsNullOrWhiteSpace(search))
+        // {
+        //     query = query.Where(s => s.ClinicName.Contains(search));
+        // }
+
+        // OrderBy switch
+        query = (sortString) switch
+        {
+            "ClinicName" => (sortDirection == "Descending") ? query.OrderByDescending(s => s.ClinicName) : query.OrderBy(s => s.ClinicName),
+            "CreatedDate" => (sortDirection == "Descending") ? query.OrderByDescending(s => s.CreatedDate) : query.OrderBy(s => s.CreatedDate),
+            _ => query.OrderByDescending(s => s.Id), // Default
+        };
+
+        var result = await PagedList<Clinic>.ToPagedList(query, request.PageNumber, request.PageSize);
+        return await Task.FromResult(new GridDataProviderResult<Clinic> { Data = result.Data, TotalCount = result.RecordsTotal });
     }
 
-    private void ShowDeleteModal(Clinic model)
+    private async Task ShowDeleteModal(Clinic model)
     {
         DeleteModel = model;
-        DeleteModal = true;
+        await DeleteConfirm_ref.ShowModal();
     }
 }
