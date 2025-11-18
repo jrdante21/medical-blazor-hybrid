@@ -3,7 +3,9 @@ using MedicalApp.Shared.Hubs;
 using MedicalApp.Shared.Services;
 using MedicalApp.Web.Components;
 using MedicalApp.Web.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,26 @@ builder.Services.AddSignalR();
 builder.Services.AddResponseCompression(opts =>
 {
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/octet-stream"]);
+});
+// Add Hub Connection
+builder.Services.AddScoped(sp =>
+{
+    var navMan = sp.GetRequiredService<NavigationManager>();
+    //var accessTokenProvider = sp.GetRequiredService<IAccessTokenProvider>();
+    return new HubConnectionBuilder()
+        .WithUrl(navMan.ToAbsoluteUri("/recordhub")
+            //, options =>
+            //{
+            //    options.AccessTokenProvider = async () =>
+            //    {
+            //        var accessTokenResult = await accessTokenProvider.RequestAccessToken();
+            //        accessTokenResult.TryGetToken(out var accessToken);
+            //        return accessToken.Value;
+            //    };
+            //}
+        )
+        .WithAutomaticReconnect()
+        .Build();
 });
 
 // Add device-specific services used by the MedicalApp.Shared project

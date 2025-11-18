@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject HubConnection HubCon;
 
 <BlazorBootstrapLayout StickyHeader="true">
     <HeaderSection>
@@ -21,6 +22,7 @@
 
     <FooterSection>
         @* Other Content Here *@
+        <small>@(hubConnected ? "Connected" : "Connecting...")</small>
     </FooterSection>
 </BlazorBootstrapLayout>
 
@@ -47,5 +49,17 @@
         };
 
         return navItems;
+    }
+
+    private bool hubConnected => HubCon?.State == HubConnectionState.Connected;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HubCon.StartAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await HubCon.StopAsync();
     }
 }

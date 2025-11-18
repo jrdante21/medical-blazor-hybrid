@@ -1,6 +1,8 @@
 ﻿@using MedicalApp.Shared.Models
 @inject MedicalApp.Shared.Data.AppDbContext DbContext
 @inject NavigationManager NavManager
+@inject HubConnection HubCon
+@inject ToastService ToastService
 
 <Modal @ref="modal" title="@($"Delete {Model?.ClinicName}?")" UseStaticBackdrop="true" CloseOnEscape="false">
     <BodyTemplate>
@@ -20,9 +22,6 @@
     [Parameter]
     public Clinic? Model { get; set; }
 
-    [Inject] 
-    protected ToastService ToastService { get; set; } = default!;
-
     public async Task ShowModal()
     {
         await modal.ShowAsync();
@@ -39,6 +38,12 @@
         Loading = true;
         DbContext.Clinic.Remove(Model);
         await DbContext.SaveChangesAsync();
+
+        // Hub connection
+        if (HubCon is not null)
+        {
+            await HubCon.SendAsync("ClinicModify", Model.Id, "deleted");
+        }
 
         Loading = false;
         ToastService.Notify(new ToastMessage(ToastType.Success, $"{Model.ClinicName} deleted successfully."));

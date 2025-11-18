@@ -2,6 +2,8 @@
 @using MedicalApp.Shared.Models
 @inject MedicalApp.Shared.Data.AppDbContext DbContext
 @inject NavigationManager NavManager
+@inject HubConnection HubCon
+@inject ToastService ToastService
 
 <PageTitle>@Model?.ClinicName | Clinic</PageTitle>
 
@@ -36,5 +38,16 @@
         // Get Model
         Model = await DbContext.Clinic.FindAsync(Id);
         if (Model == null) NavManager.NavigateTo("notfound");
+
+        // Hub connection
+        HubCon.On<int, string>("ClinicModified", async (int id, string action) =>
+        {
+            if (action == "deleted" && id == Id)
+            {
+                ToastService.Notify(new ToastMessage(ToastType.Danger, $"Clinic was deleted."));
+                return;
+            }
+            Model = await DbContext.Clinic.FindAsync(Id);
+        });
     }
 }

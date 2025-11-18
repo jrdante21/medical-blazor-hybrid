@@ -2,6 +2,7 @@
 @using MedicalApp.Shared.Models
 @inject MedicalApp.Shared.Data.AppDbContext DbContext
 @inject NavigationManager NavManager
+@inject HubConnection HubCon;
 
 <PageTitle>Clinics</PageTitle>
 
@@ -17,13 +18,6 @@
 
     @* Display Result *@
     <div class="position-relative">
-        <p>@(hubConnected ? "Connected" : "Connecting...")</p>
-        <p>@ModelId</p>
-
-        @if (Loading)
-        {
-            <ContentSpinner />
-        }
         <Grid @ref="grid" TItem="Clinic"
               Class="table table-hover table-bordered table-striped text-nowrap align-middle"
               DataProvider="DataProvider"
@@ -61,27 +55,12 @@
     private DeleteConfirm DeleteConfirm_ref = default!;
     private Clinic? DeleteModel = null;
 
-    // Loading
-    private bool Loading = false;
-
-    // Hub
-    private HubConnection? hubCon;
-    private bool hubConnected => hubCon?.State == HubConnectionState.Connected;
-    private int ModelId = 0;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        hubCon = new HubConnectionBuilder()
-            .WithUrl(NavManager.ToAbsoluteUri("/recordhub"))
-            .Build();
-
-        hubCon.On<int, string>("ClinicModified", async (int id, string action) =>
+        HubCon.On<int, string>("ClinicModified", async (int id, string action) =>
         {
-            ModelId = id;
-            await grid.RefreshDataAsync();
+            await grid.RefreshDataAsync(); // refresh table when record item is modified
         });
-
-        await hubCon.StartAsync();
     }
 
     private async Task<GridDataProviderResult<Clinic>> DataProvider(GridDataProviderRequest<Clinic> request)

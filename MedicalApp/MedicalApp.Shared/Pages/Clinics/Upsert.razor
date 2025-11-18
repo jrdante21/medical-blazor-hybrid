@@ -3,6 +3,7 @@
 @inject MedicalApp.Shared.Data.AppDbContext DbContext
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
+@inject HubConnection HubCon;
 
 <PageTitle>@PageTitle</PageTitle>
 
@@ -55,17 +56,10 @@
     [SupplyParameterFromForm]
     private Clinic? Model { get; set; }
 
-    private HubConnection? hubCon;
-
     protected override async Task OnInitializedAsync()
     {
         // Setup page title
         PageTitle = (Id == null) ? "Create New Clinic" : "Edit Clinic";
-
-        // Hub Connection
-        hubCon = new HubConnectionBuilder()
-            .WithUrl(NavManager.ToAbsoluteUri("/recordhub"))
-            .Build();
 
         // Get Model
         Model ??= new();
@@ -74,16 +68,13 @@
             Model = await DbContext.Clinic.FindAsync(Id);
 
             // Hub connection
-            hubCon.On("ClinicModified", async () =>
+            HubCon.On("ClinicModified", async () =>
             {
                 Model = await DbContext.Clinic.FindAsync(Id);
             });
 
             if (Model == null) NavManager.NavigateTo("notfound");
         }
-
-        // Start Hub
-        await hubCon.StartAsync();
     }
 
     private async Task Submit()
@@ -124,9 +115,9 @@
             }
 
             // Hub connection
-            if (hubCon is not null)
+            if (HubCon is not null)
             {
-                await hubCon.SendAsync("ClinicModify", model.Id, "modified");
+                await HubCon.SendAsync("ClinicModify", model.Id, "modified");
             }
 
             Loading = false;
